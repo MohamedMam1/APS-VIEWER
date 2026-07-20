@@ -1,6 +1,4 @@
-import { initViewer, loadModel } from "./viewer.js";
-
-initViewer(document.getElementById("preview")).then((viewer) => {
+window.initViewer(document.getElementById("preview")).then((viewer) => {
   monitorAndLoadModel(viewer);
 });
 
@@ -27,7 +25,6 @@ async function monitorAndLoadModel(viewer) {
         showNotification(
           `Processing architectural assets (${data.progress || "0%"}) ... Please wait.`,
         );
-        // Poll status every 5 seconds until complete
         window.statusCheckTimeout = setTimeout(
           () => monitorAndLoadModel(viewer),
           5000,
@@ -41,7 +38,7 @@ async function monitorAndLoadModel(viewer) {
       case "success":
       default:
         clearNotification();
-        loadModel(viewer, data.urn);
+        window.loadModel(viewer, data.urn); // Called from global window scope
         break;
     }
   } catch (err) {

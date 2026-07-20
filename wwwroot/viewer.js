@@ -12,7 +12,7 @@ async function getAccessToken(callback) {
   }
 }
 
-export function initViewer(container) {
+window.initViewer = function (container) {
   return new Promise(function (resolve, reject) {
     Autodesk.Viewing.Initializer(
       { env: "AutodeskProduction", getAccessToken },
@@ -27,9 +27,9 @@ export function initViewer(container) {
       },
     );
   });
-}
+};
 
-export function loadModel(viewer, urn) {
+window.loadModel = function (viewer, urn) {
   return new Promise(function (resolve, reject) {
     function onDocumentLoadSuccess(doc) {
       const root = doc.getRoot();
@@ -58,4 +58,4 @@ export function loadModel(viewer, urn) {
       onDocumentLoadFailure,
     );
   });
-}
+};
