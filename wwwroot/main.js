@@ -1,6 +1,5 @@
 import { initViewer, loadModel } from "./viewer.js";
 
-// Initialize the rendering runtime targeting the standalone preview canvas
 initViewer(document.getElementById("preview")).then((viewer) => {
   monitorAndLoadModel(viewer);
 });
@@ -11,7 +10,6 @@ async function monitorAndLoadModel(viewer) {
   }
 
   try {
-    // Queries our unified status endpoint mapped specifically to bo5_model
     const resp = await fetch("/api/models/bo5/status");
     if (!resp.ok) {
       throw new Error(await resp.text());
