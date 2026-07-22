@@ -2,12 +2,47 @@ const axios = require("axios");
 const querystring = require("querystring");
 const config = require("../config");
 
+const tokenCache = new Map();
+
+function normalizeScopes(scopes) {
+  return [...new Set((scopes || []).slice().sort())].join(" ");
+}
+
+function getCachedToken(cacheKey) {
+  const cached = tokenCache.get(cacheKey);
+  if (!cached) {
+    return null;
+  }
+
+  if (Date.now() >= cached.expiresAt) {
+    tokenCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.token;
+}
+
+function cacheToken(cacheKey, tokenData) {
+  const expiresIn = Math.max(Number(tokenData.expires_in) - 60, 60);
+  tokenCache.set(cacheKey, {
+    token: tokenData,
+    expiresAt: Date.now() + expiresIn * 1000,
+  });
+  return tokenData;
+}
+
 async function getInternalToken(scopes) {
+  const cacheKey = normalizeScopes(scopes);
+  const cachedToken = getCachedToken(cacheKey);
+  if (cachedToken) {
+    return cachedToken;
+  }
+
   const response = await axios.post(
     "https://developer.api.autodesk.com/authentication/v2/token",
     querystring.stringify({
       grant_type: "client_credentials",
-      scope: scopes.join(" "),
+      scope: cacheKey,
     }),
     {
       headers: {
@@ -16,7 +51,19 @@ async function getInternalToken(scopes) {
       },
     },
   );
-  return response.data;
+
+  return cacheToken(cacheKey, response.data);
+}
+
+function requireToken(scopes) {
+  return async (req, res, next) => {
+    try {
+      req.internalToken = await getInternalToken(scopes);
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 async function ensureBucketExists() {
@@ -121,6 +168,7 @@ async function getManifest(urn) {
 
 module.exports = {
   getInternalToken,
+  requireToken,
   uploadModel,
   translateModel,
   getManifest,
